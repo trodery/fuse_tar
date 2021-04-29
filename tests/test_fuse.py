@@ -77,9 +77,8 @@ def test_correct_read_file_contents(testfs):
 
   (mnt_dir, _, things) = testfs
   (_, member_filename, expected_size, expected_sha1) = things
-  print(f"{mnt_dir=}")
+
   path = os.path.join(mnt_dir, member_filename)
-  print(f"{path=}")
 
   observed_size = os.stat(path).st_size
   assert observed_size == expected_size, \
