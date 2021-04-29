@@ -1,8 +1,8 @@
 """Main"""
 
 from argparse import ArgumentParser, Namespace
-import llfuse
-from . import _init_logging, _getmount_point, TarFS
+
+from . import _getmount_point, _init_logging, run_tar_fs
 
 
 def _parseargs() -> Namespace:  # {{{
@@ -44,20 +44,24 @@ def main() -> None:  # {{{
   mpath = _getmount_point(options.tarfile,
                           options.mountpoint,
                           create_missing_mount=options.create_missing_mount)
-  tarfs = TarFS(options.tarfile)
-  fuse_options = set(llfuse.default_options)
-  fuse_options.add('fsname=fuse_tar')
-  fuse_options.add('ro')
-  if options.debug_fuse:
-    fuse_options.add('debug')
-  llfuse.init(tarfs, mpath, fuse_options)
-  try:
-    llfuse.main()
-  except Exception as exc:
-    llfuse.close(unmount=False)
-    raise exc
+  # tarfs = TarFS(options.tarfile)
+  # fuse_options = set(llfuse.default_options)
+  # fuse_options.add('fsname=fuse_tar')
+  # fuse_options.add('ro')
+  # if options.debug_fuse:
+  #   fuse_options.add('debug')
+  # llfuse.init(tarfs, mpath, fuse_options)
+  # try:
+  #   llfuse.main()
+  # except Exception as exc:
+  #   llfuse.close(unmount=False)
+  #   raise exc
 
-  llfuse.close()
+  # llfuse.close()
+  run_tar_fs(options.tarfile,
+             mpath,
+             options.fuse_options,
+             debug=options.debug_fuse)
 
 
 # }}}

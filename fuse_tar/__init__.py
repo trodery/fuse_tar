@@ -18,9 +18,10 @@ import sys
 import errno
 import logging
 import os
+import io
 import stat
 import time
-from typing import Any, Iterator, Tuple, Optional
+from typing import Any, Iterator, Tuple, Optional, Set
 from distutils.version import LooseVersion
 
 import tarfile
@@ -82,6 +83,14 @@ class TarFS(llfuse.Operations):  # type: ignore
     self.max_inode: int = len(self.tar.getnames()) + self.delta
 
   # }}}
+
+  def _get_tar_member(self, idx: int) -> tarfile.TarInfo:
+    try:
+      tar_member = self.tar.getmembers()[idx]
+      return tar_member
+    except KeyError:
+      # Filename doesn't exist
+      raise llfuse.FUSEError(errno.ENOENT)  # pylint: disable=raise-missing-from
 
   def getattr(
       self,
@@ -183,6 +192,12 @@ class TarFS(llfuse.Operations):  # type: ignore
           name == os.path.basename(fname).encode('utf-8'):
         return self.getattr(idx + self.delta)
       idx += 1
+    if name.startswith(b".Trash"):
+      print(
+          f"lookup(): {parent_inode=} {name=} doesn't exist BUT RETURNING INODE 1"
+      )
+      return self.getattr(1 + self.delta)
+    # print(f"lookup(): {parent_inode=} {name=} doesn't exist")
     raise llfuse.FUSEError(errno.ENOENT)
 
   # }}}
@@ -233,14 +248,42 @@ class TarFS(llfuse.Operations):  # type: ignore
 
   # }}}
 
-  def read(self, fhandle: int, off: int, size: int) -> Any:  # {{{
-    """
-    read file
-    """
-    idx: int = fhandle - self.delta
-    fname: Any = self.tar.extractfile(self.tar.getnames()[idx])
-    fname.seek(off)
-    return fname.read(size)
+  def read(self, fhandle: int, off: int, size: int) -> bytes:  # {{{
+    """Read the contents of a file.
+
+      Reads the contents of a file by providing the inode,
+      offset of read, and size of read.
+
+      Args:
+
+        fhandle (int): Inode number of file to read.
+        off (int): Offset in bytes of file to read.
+        size (int): Size in bytes to read.
+
+      Returns:
+
+        bytes: Contents of read file as bytes.
+      """
+
+    try:
+      tar_member = self.tar.getmembers()[fhandle - self.delta]
+
+      if not tar_member.isreg():
+        # If tar entry isn't a regular file raise
+        # EPERM (Operation not permitted) for now
+        # until we support symlinks
+        raise llfuse.FUSEError(errno.EPERM)
+
+      fh = self.tar.extractfile(tar_member.name)
+    except KeyError:
+      # Filename doesn't exist
+      raise llfuse.FUSEError(errno.ENOENT)  # pylint: disable=raise-missing-from
+    if isinstance(fh, io.BufferedReader):
+      fh.seek(off)
+      return fh.read(size)
+    # Tar extractfile returned None so that's an issue
+    # so raise EIO (I/O Error)
+    raise llfuse.FUSEError(errno.EIO)
 
   # }}}
 
@@ -332,3 +375,25 @@ def _getmount_point(
 
 
 # }}}
+
+
+def run_tar_fs(path_to_tar: str,
+               mount_path: str,
+               fuse_options: Set,
+               debug: bool = False):
+  """Run the TarFS"""
+
+  tarfs = TarFS(path_to_tar)
+  fuse_options = set(llfuse.default_options)
+  fuse_options.add('fsname=fuse_tar')
+  fuse_options.add('ro')
+  if debug:
+    fuse_options.add('debug')
+  llfuse.init(tarfs, mount_path, fuse_options)
+  try:
+    llfuse.main()
+  except Exception as exc:
+    llfuse.close(unmount=False)
+    raise exc
+
+  llfuse.close()
