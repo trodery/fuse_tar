@@ -186,12 +186,10 @@ class TarFS(llfuse.Operations):  # type: ignore
     else:
       prefix = self.tar.getnames()[idx]
 
-    idx = 0
-    for fname in self.tar.getnames():
-      if os.path.split(fname)[0] == prefix and\
-          name == os.path.basename(fname).encode('utf-8'):
+    for idx, fname in enumerate(self.tar.getnames()):
+      if os.path.split(fname)[0] == prefix and name == os.path.basename(
+          fname).encode('utf-8'):
         return self.getattr(idx + self.delta)
-      idx += 1
 
     # When testing on an Ubuntu desktop machine, upon mounting
     # some process will check if the files `.Trash` and `.Trash-${UID}`
@@ -235,13 +233,11 @@ class TarFS(llfuse.Operations):  # type: ignore
       idx = inode - self.delta
       prefix = self.tar.getnames()[idx]
 
-    idx = 1
-    for fname in self.tar.getnames():
+    for idx, fname in enumerate(self.tar.getnames(), start=1):
       if os.path.split(fname)[0] == prefix:
         if idx > off:
           yield (os.path.basename(fname).encode('utf-8'),
                  self.getattr(idx - 1 + self.delta), idx)
-      idx += 1
 
   # }}}
 
