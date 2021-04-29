@@ -22,6 +22,7 @@ import os
 import stat
 import time
 from typing import Any, Iterator, Tuple
+from distutils.version import LooseVersion
 
 import tarfile
 from argparse import ArgumentParser
@@ -41,7 +42,11 @@ except (ModuleNotFoundError, ImportError):
       "possible command: python3 -m pip install llfuse")
   sys.exit(1)
 
-assert llfuse.__version__.split('.') < ['1', '3', '0'], "wrong llfuse version, needs +1.3.0"
+# Check llfuse version is >= 1.3.0
+llfuse_version = LooseVersion(llfuse.__version__)
+llfuse_minimum_version = LooseVersion("1.3.0")
+assert llfuse_version >= llfuse_minimum_version, f"fuse_tar requires llfuse>=1.3.0 but you have llfuse=={llfuse.__version__}"
+
 
 log = logging.getLogger(__name__)
 
