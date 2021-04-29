@@ -390,7 +390,16 @@ def run_tar_fs(path_to_tar: str,
                mount_path: str,
                fuse_options: Set,
                debug: bool = False):
-  """Run the TarFS"""
+  """Run the TarFS.
+
+  Args:
+
+    path_to_tar (str): Path to the tar file to mount.
+    mount_path (str): Path to mount the tar file.
+    fuse_options (Set): Set of strings of fuse options.
+    debug (bool, optional): Enable debugging. Defaults to False.
+
+  """
 
   tarfs = TarFS(path_to_tar)
   fuse_options = set(llfuse.default_options)
