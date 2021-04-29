@@ -26,6 +26,30 @@ items = [
      '8dfd2dbf199f4a18c121532c261de6e7dbc5bd31'),
     ('tarfile1.tar', 'dir1/file2.txt', 10,
      '2ae5b479319444ab14e493acd1c60c46e10a564e'),
+    ('tarfile1.tar.gz', '513.txt', 514,
+     'dde18dafb16622dee24c63e54531c65d8675afef'),
+    ('tarfile1.tar.gz', '10241.txt', 10242,
+     '9340f4c0e495862b8d9a62a44e604896a047713a'),
+    ('tarfile1.tar.gz', 'dir1/file1.txt', 10,
+     '8dfd2dbf199f4a18c121532c261de6e7dbc5bd31'),
+    ('tarfile1.tar.gz', 'dir1/file2.txt', 10,
+     '2ae5b479319444ab14e493acd1c60c46e10a564e'),
+    ('tarfile1.tar.bz2', '513.txt', 514,
+     'dde18dafb16622dee24c63e54531c65d8675afef'),
+    ('tarfile1.tar.bz2', '10241.txt', 10242,
+     '9340f4c0e495862b8d9a62a44e604896a047713a'),
+    ('tarfile1.tar.bz2', 'dir1/file1.txt', 10,
+     '8dfd2dbf199f4a18c121532c261de6e7dbc5bd31'),
+    ('tarfile1.tar.bz2', 'dir1/file2.txt', 10,
+     '2ae5b479319444ab14e493acd1c60c46e10a564e'),
+    ('tarfile1.tar.xz', '513.txt', 514,
+     'dde18dafb16622dee24c63e54531c65d8675afef'),
+    ('tarfile1.tar.xz', '10241.txt', 10242,
+     '9340f4c0e495862b8d9a62a44e604896a047713a'),
+    ('tarfile1.tar.xz', 'dir1/file1.txt', 10,
+     '8dfd2dbf199f4a18c121532c261de6e7dbc5bd31'),
+    ('tarfile1.tar.xz', 'dir1/file2.txt', 10,
+     '2ae5b479319444ab14e493acd1c60c46e10a564e'),
 ]
 
 
@@ -105,13 +129,27 @@ def start_fs(request, tmpdir):
       umount(mount_process, mnt_dir)
 
 
-@pytest.mark.parametrize('testfs', [0, 1, 2, 3],
-                         ids=[
-                             'tarfile1.tar-513.txt', 'tarfile1.tar-10241.txt',
-                             'tarfile1.tar-dir1/file1.txt',
-                             'tarfile1.tar--dir1/file2.txt'
-                         ],
-                         indirect=True)
+@pytest.mark.parametrize(
+    'testfs', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+    ids=[
+        'tarfile1.tar-513.txt',
+        'tarfile1.tar-10241.txt',
+        'tarfile1.tar-dir1/file1.txt',
+        'tarfile1.tar-dir1/file2.txt',
+        'tarfile1.tar.gz-513.txt',
+        'tarfile1.tar.gz-10241.txt',
+        'tarfile1.tar.gz-dir1/file1.txt',
+        'tarfile1.tar.gz--dir1/file2.txt',
+        'tarfile1.tar.bz2-513.txt',
+        'tarfile1.tar.bz2-10241.txt',
+        'tarfile1.tar.bz2-dir1/file1.txt',
+        'tarfile1.tar.bz2-dir1/file2.txt',
+        'tarfile1.tar-513.txt',
+        'tarfile1.tar-10241.txt',
+        'tarfile1.tar-dir1/file1.txt',
+        'tarfile1.tar-dir1/file2.txt',
+    ],
+    indirect=True)
 def test_correct_read_file_contents(testfs):
   """Test that we correctly read the contents of a file"""
 
