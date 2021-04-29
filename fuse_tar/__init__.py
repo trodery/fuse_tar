@@ -88,7 +88,15 @@ class TarFS(llfuse.Operations):  # type: ignore
     try:
       tar_member = self.tar.getmembers()[idx]
       return tar_member
-    except KeyError:
+    except (KeyError, IndexError):
+      # Filename doesn't exist
+      raise llfuse.FUSEError(errno.ENOENT)  # pylint: disable=raise-missing-from
+
+  def _get_tar_filename(self, idx: int) -> str:
+    try:
+      filename = self.tar.getnames()[idx]
+      return filename
+    except (KeyError, IndexError):
       # Filename doesn't exist
       raise llfuse.FUSEError(errno.ENOENT)  # pylint: disable=raise-missing-from
 
@@ -111,7 +119,7 @@ class TarFS(llfuse.Operations):  # type: ignore
 
     # parameters for inodes inside the tar file
     elif inode < self.max_inode:
-      tar_inode = self.tar.getmembers()[inode - self.delta]
+      tar_inode = self._get_tar_member(inode - self.delta)
 
       # setting proper mode based on the type of the inode
       entry.st_mode = 0
@@ -173,7 +181,7 @@ class TarFS(llfuse.Operations):  # type: ignore
     idx = parent_inode - self.delta
     if name == b'..':
       # we get the name of the folder above
-      p_path = os.path.split(self.tar.getnames()[idx])[0]
+      p_path = os.path.split(self._get_tar_filename(idx))[0]
       # knowing the name we find the index for it in the list
       idx = self.tar.getnames().index(p_path)
       # index + delta is our inode number
@@ -184,7 +192,7 @@ class TarFS(llfuse.Operations):  # type: ignore
       prefix = ""
 
     else:
-      prefix = self.tar.getnames()[idx]
+      prefix = self._get_tar_filename(idx)
 
     for idx, fname in enumerate(self.tar.getnames()):
       if os.path.split(fname)[0] == prefix and name == os.path.basename(
@@ -197,8 +205,8 @@ class TarFS(llfuse.Operations):  # type: ignore
     # it to fail. So do something better with this.
     if name.startswith(b".Trash"):
       print(
-          f"lookup(): parent_inode={parent_inode} name={name} doesn't exist BUT RETURNING INODE 1"
-      )
+          f"lookup(): parent_inode={parent_inode} name={name.decode('utf-8')}"
+          " doesn't exist BUT RETURNING INODE 1")
       return self.getattr(1 + self.delta)
 
     raise llfuse.FUSEError(errno.ENOENT)
@@ -215,7 +223,7 @@ class TarFS(llfuse.Operations):  # type: ignore
 
     if inode < self.max_inode:
       idx = inode - self.delta
-      if self.tar.getmembers()[idx].isdir():
+      if self._get_tar_member(idx).isdir():
         return inode
 
     raise llfuse.FUSEError(errno.ENOENT)
@@ -231,7 +239,7 @@ class TarFS(llfuse.Operations):  # type: ignore
       prefix = ""
     else:
       idx = inode - self.delta
-      prefix = self.tar.getnames()[idx]
+      prefix = self._get_tar_filename(idx)
 
     for idx, fname in enumerate(self.tar.getnames(), start=1):
       if os.path.split(fname)[0] == prefix:
@@ -267,7 +275,7 @@ class TarFS(llfuse.Operations):  # type: ignore
       """
 
     try:
-      tar_member = self.tar.getmembers()[fhandle - self.delta]
+      tar_member = self._get_tar_member(fhandle - self.delta)
 
       if not tar_member.isreg():
         # If tar entry isn't a regular file raise
