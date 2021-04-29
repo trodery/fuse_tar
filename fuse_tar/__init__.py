@@ -192,12 +192,17 @@ class TarFS(llfuse.Operations):  # type: ignore
           name == os.path.basename(fname).encode('utf-8'):
         return self.getattr(idx + self.delta)
       idx += 1
+
+    # When testing on an Ubuntu desktop machine, upon mounting
+    # some process will check if the files `.Trash` and `.Trash-${UID}`
+    # exist. This will cause an error during the test and cause
+    # it to fail. So do something better with this.
     if name.startswith(b".Trash"):
       print(
-          f"lookup(): {parent_inode=} {name=} doesn't exist BUT RETURNING INODE 1"
+          f"lookup(): parent_inode={parent_inode} name={name} doesn't exist BUT RETURNING INODE 1"
       )
       return self.getattr(1 + self.delta)
-    # print(f"lookup(): {parent_inode=} {name=} doesn't exist")
+
     raise llfuse.FUSEError(errno.ENOENT)
 
   # }}}
