@@ -127,6 +127,7 @@ def run_fs(mountpoint: str, cross_process, path_to_tar: str):
   fuse_options.add('fsname=fuse_tar')
   fuse_options.add('ro')
   fuse_options.add('debug')
+  fuse_options.remove('nonempty')
   llfuse.init(tarfs, mountpoint, fuse_options)
   try:
     llfuse.main(workers=1)
