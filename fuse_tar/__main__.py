@@ -17,7 +17,7 @@ def _parseargs() -> Namespace:  # {{{
                       help='Where to mount the file system',
                       default="")
   parser.add_argument('--create-missing-mount',
-                      action='store_false',
+                      action='store_true',
                       default=False,
                       help='Create mount point if it doesn\'t exist')
   parser.add_argument('--debug',
