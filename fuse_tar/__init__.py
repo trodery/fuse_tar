@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 """
 fuse_tar.py
 
@@ -35,7 +34,7 @@ else:
 
 # works with version llfuse +1.3
 try:
-  import llfuse # type: ignore
+  import llfuse  # type: ignore
 except (ModuleNotFoundError, ImportError):
   print("please install llfuse python module, version +1.3.0"+\
       "possible command: python3 -m pip install llfuse")
@@ -44,10 +43,11 @@ except (ModuleNotFoundError, ImportError):
 # Check llfuse version is >= 1.3.0
 llfuse_version = LooseVersion(llfuse.__version__)
 llfuse_minimum_version = LooseVersion("1.3.0")
-assert llfuse_version >= llfuse_minimum_version, f"fuse_tar requires llfuse>=1.3.0 but you have llfuse=={llfuse.__version__}"
-
+assert llfuse_version >= llfuse_minimum_version, \
+  f"fuse_tar requires llfuse>=1.3.0 but you have llfuse=={llfuse.__version__}"
 
 log = logging.getLogger(__name__)
+
 
 def _get_tarfile_mode(filename: str) -> str:
   if filename.lower().endswith("gz"):
@@ -58,12 +58,13 @@ def _get_tarfile_mode(filename: str) -> str:
     return "r:xz"
   return "r"
 
+
 # TarFS {{{
-class TarFS(llfuse.Operations):# type: ignore
+class TarFS(llfuse.Operations):  # type: ignore
   """
   Read Only FuseFS backedup by compressed (or not) Tar archive
   """
-  def __init__(self, tarname: str) -> None:# {{{
+  def __init__(self, tarname: str) -> None:  # {{{
     """
     """
     super(TarFS, self).__init__()
@@ -79,9 +80,14 @@ class TarFS(llfuse.Operations):# type: ignore
 
     # max inode value, if we get something higher we don't need to check anything
     self.max_inode: int = len(self.tar.getnames()) + self.delta
+
   # }}}
 
-  def getattr(self, inode: int, ctx: llfuse.RequestContext = None) -> llfuse.EntryAttributes:# {{{ pylint: disable=unused-argument
+  def getattr(
+      self,
+      inode: int,
+      ctx: llfuse.RequestContext = None  # pylint: disable=unused-argument
+  ) -> llfuse.EntryAttributes:  # {{{
     """
     get inode attributes
     """
@@ -134,10 +140,15 @@ class TarFS(llfuse.Operations):# type: ignore
     entry.entry_timeout = 3600
 
     return entry
+
   # }}}
 
-  def lookup(self, parent_inode: int, name: bytes,
-             ctx: llfuse.RequestContext = None) -> llfuse.EntryAttributes:# {{{ pylint: disable=unused-argument
+  def lookup(
+      self,
+      parent_inode: int,
+      name: bytes,
+      ctx: llfuse.RequestContext = None  # pylint: disable=unused-argument
+  ) -> llfuse.EntryAttributes:  # {{{
     """
     lookup inode / idx number
     """
@@ -173,9 +184,10 @@ class TarFS(llfuse.Operations):# type: ignore
         return self.getattr(idx + self.delta)
       idx += 1
     raise llfuse.FUSEError(errno.ENOENT)
+
   # }}}
 
-  def opendir(self, inode: int, ctx: llfuse.RequestContext) -> int:# {{{ pylint: disable=unused-argument
+  def opendir(self, inode: int, ctx: llfuse.RequestContext) -> int:  # {{{ pylint: disable=unused-argument
     """
     open/enter dir
     """
@@ -189,9 +201,11 @@ class TarFS(llfuse.Operations):# type: ignore
         return inode
 
     raise llfuse.FUSEError(errno.ENOENT)
+
   # }}}
 
-  def readdir(self, inode: int, off: int) -> Iterator[Tuple[bytes, Any, int]]:# {{{
+  def readdir(self, inode: int,
+              off: int) -> Iterator[Tuple[bytes, Any, int]]:  # {{{
     """
     list/read dir
     """
@@ -205,18 +219,21 @@ class TarFS(llfuse.Operations):# type: ignore
     for fname in self.tar.getnames():
       if os.path.split(fname)[0] == prefix:
         if idx > off:
-          yield (os.path.basename(fname).encode('utf-8'), self.getattr(idx - 1 + self.delta), idx)
+          yield (os.path.basename(fname).encode('utf-8'),
+                 self.getattr(idx - 1 + self.delta), idx)
       idx += 1
+
   # }}}
 
-  def open(self, inode: int, flags: int, ctx: llfuse.RequestContext) -> int:# {{{ pylint: disable=unused-argument,no-self-use
+  def open(self, inode: int, flags: int, ctx: llfuse.RequestContext) -> int:  # {{{ pylint: disable=unused-argument,no-self-use
     """
     open file
     """
     return inode
+
   # }}}
 
-  def read(self, fhandle: int, off: int, size: int) -> Any:# {{{
+  def read(self, fhandle: int, off: int, size: int) -> Any:  # {{{
     """
     read file
     """
@@ -224,9 +241,10 @@ class TarFS(llfuse.Operations):# type: ignore
     fname: Any = self.tar.extractfile(self.tar.getnames()[idx])
     fname.seek(off)
     return fname.read(size)
+
   # }}}
 
-  def statfs(self, ctx: llfuse.RequestContext) -> llfuse.StatvfsData:# {{{ pylint: disable=unused-argument
+  def statfs(self, ctx: llfuse.RequestContext) -> llfuse.StatvfsData:  # {{{ pylint: disable=unused-argument
     """
     to make output of df nicer
     man 2 statvfs
@@ -242,15 +260,21 @@ class TarFS(llfuse.Operations):# type: ignore
     stfs.f_frsize = 1
 
     return stfs
+
   # }}}
+
+
 # }}}
 
-def _init_logging(debug: bool = False) -> None:# {{{
+
+def _init_logging(debug: bool = False) -> None:  # {{{
   """
   logging handler for fuse
   """
-  formatter = logging.Formatter('%(asctime)s.%(msecs)03d %(threadName)s: '
-                                '[%(name)s] %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
+  formatter = logging.Formatter(
+      '%(asctime)s.%(msecs)03d %(threadName)s: '
+      '[%(name)s] %(message)s',
+      datefmt="%Y-%m-%d %H:%M:%S")
   handler = logging.StreamHandler()
   handler.setFormatter(formatter)
   root_logger = logging.getLogger()
@@ -261,9 +285,15 @@ def _init_logging(debug: bool = False) -> None:# {{{
     handler.setLevel(logging.INFO)
     root_logger.setLevel(logging.INFO)
   root_logger.addHandler(handler)
+
+
 # }}}
 
-def _getmount_point(path_to_tarfile: str, mount_path: str, create_missing_mount: Optional[bool] = False) -> str:  # {{{
+
+def _getmount_point(
+    path_to_tarfile: str,
+    mount_path: str,
+    create_missing_mount: Optional[bool] = False) -> str:  # {{{
   """Verify if the mount point exists and is correct.
 
   Args:
@@ -299,4 +329,6 @@ def _getmount_point(path_to_tarfile: str, mount_path: str, create_missing_mount:
 
     raise Exception("Please specify a correct mountpoint")
   return mpath
+
+
 # }}}
